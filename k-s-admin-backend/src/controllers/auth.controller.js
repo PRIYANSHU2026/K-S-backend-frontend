@@ -38,7 +38,10 @@ const login = async (req, res) => {
           await User.updateLastLogin(user.id);
         }
       }
-    } else if (process.env.NODE_ENV === 'development') {
+    }
+
+    // If database authentication failed or not available, try local auth in development
+    if ((!user || !isPasswordValid) && process.env.NODE_ENV === 'development') {
       // Fallback to local authentication in development mode
       console.log('Using local authentication fallback');
       user = await localAuth.getByEmail(email);
@@ -46,6 +49,10 @@ const login = async (req, res) => {
       if (user) {
         // Verify password
         isPasswordValid = await localAuth.verifyPassword(password, user.password);
+
+        if (isPasswordValid) {
+          console.log('Login successful with local authentication');
+        }
       }
     }
 

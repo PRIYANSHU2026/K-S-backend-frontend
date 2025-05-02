@@ -78,24 +78,6 @@ CREATE TABLE IF NOT EXISTS `warranties` (
   FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
--- Create categories table
-CREATE TABLE IF NOT EXISTS `categories` (
-  `id` VARCHAR(36) NOT NULL,
-  `name` VARCHAR(100) NOT NULL,
-  `description` TEXT,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Create products table
-CREATE TABLE IF NOT EXISTS `products` (
-  `id` VARCHAR(36) NOT NULL,
-  ...,
-  `category_id` VARCHAR(36) NOT NULL,
-  ...,
-  FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Default data for roles
 INSERT INTO `roles` (`id`, `name`, `description`, `permissions`) VALUES
