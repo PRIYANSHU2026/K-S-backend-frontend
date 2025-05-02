@@ -31,6 +31,7 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [attemptCount, setAttemptCount] = useState(0);
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -45,16 +46,44 @@ export const Login: React.FC = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setError(null);
+    setAttemptCount(prev => prev + 1);
 
     try {
+      console.log('Attempting login with:', {
+        email: values.email,
+        passwordLength: values.password.length
+      });
+
       await login(values.email, values.password);
+      console.log('Login successful, navigating to dashboard');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      setError('Invalid email or password. Please try again.');
+
+      // More specific error messages based on the error
+      if (error.response && error.response.status === 401) {
+        setError('Invalid email or password. Please try again.');
+      } else if (error.response && error.response.status === 429) {
+        setError('Too many login attempts. Please try again later.');
+      } else if (error.message === 'Network Error') {
+        setError('Network error. Please check your connection or try again later.');
+      } else {
+        setError(`Login failed: ${error.response?.data?.message || error.message || 'Unknown error'}`);
+      }
+
+      // Additional help after multiple failed attempts
+      if (attemptCount >= 2) {
+        setError(prev => `${prev || ''} Remember to use the default credentials: admin@ks-enterprise.com / admin123`);
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Auto-fill default credentials (for testing/demo only)
+  const fillDefaultCredentials = () => {
+    form.setValue('email', 'admin@ks-enterprise.com');
+    form.setValue('password', 'admin123');
   };
 
   return (
@@ -130,6 +159,15 @@ export const Login: React.FC = () => {
                 <p className="text-muted-foreground">
                   Default admin: admin@ks-enterprise.com / admin123
                 </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={fillDefaultCredentials}
+                  className="mt-2 text-xs"
+                >
+                  Fill default credentials
+                </Button>
               </div>
             </form>
           </Form>

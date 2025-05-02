@@ -1,82 +1,72 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from "sonner";
 import { AuthProvider } from '@/contexts/AuthContext';
-import { ProtectedRoute, PublicOnlyRoute } from '@/components/shared/ProtectedRoute';
 import { Login } from '@/components/pages/Login';
 import { Dashboard } from '@/components/pages/Dashboard';
+import { AdminLayout } from '@/components/layout/AdminLayout';
+import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
+
+// API URL for display
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public Routes */}
-          <Route element={<PublicOnlyRoute />}>
-            <Route path="/login" element={<Login />} />
-          </Route>
+          <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes */}
-          <Route path="/dashboard" element={<ProtectedRoute />}>
-            <Route index element={<Dashboard />} />
-          </Route>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <Dashboard />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Product Routes */}
-          <Route path="/products" element={<ProtectedRoute requiredPermission="products.view" />}>
-            <Route index element={<div>Products List</div>} />
-            <Route path="new" element={<div>New Product</div>} />
-            <Route path=":id" element={<div>Edit Product</div>} />
-          </Route>
+          {/* Add other protected routes here */}
 
-          {/* Category Routes */}
-          <Route path="/categories" element={<ProtectedRoute requiredPermission="categories.view" />}>
-            <Route index element={<div>Categories List</div>} />
-            <Route path="new" element={<div>New Category</div>} />
-            <Route path=":id" element={<div>Edit Category</div>} />
-          </Route>
-
-          {/* Customer Routes */}
-          <Route path="/customers" element={<ProtectedRoute requiredPermission="customers.view" />}>
-            <Route index element={<div>Customers List</div>} />
-            <Route path="new" element={<div>New Customer</div>} />
-            <Route path=":id" element={<div>Edit Customer</div>} />
-          </Route>
-
-          {/* Warranty Routes */}
-          <Route path="/warranties" element={<ProtectedRoute requiredPermission="warranties.view" />}>
-            <Route index element={<div>Warranties List</div>} />
-            <Route path="new" element={<div>New Warranty</div>} />
-            <Route path=":id" element={<div>Edit Warranty</div>} />
-          </Route>
-
-          {/* User Routes */}
-          <Route path="/users" element={<ProtectedRoute requiredPermission="users.view" />}>
-            <Route index element={<div>Users List</div>} />
-            <Route path="new" element={<div>New User</div>} />
-            <Route path=":id" element={<div>Edit User</div>} />
-          </Route>
-
-          {/* Role Routes */}
-          <Route path="/roles" element={<ProtectedRoute requiredPermission="roles.view" />}>
-            <Route index element={<div>Roles List</div>} />
-            <Route path="new" element={<div>New Role</div>} />
-            <Route path=":id" element={<div>Edit Role</div>} />
-          </Route>
-
-          {/* Settings Routes */}
-          <Route path="/settings" element={<ProtectedRoute />}>
-            <Route path="profile" element={<div>User Profile</div>} />
-            <Route path="password" element={<div>Change Password</div>} />
-          </Route>
-
-          {/* Redirect / to /dashboard if authenticated */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-          {/* Fallback route */}
+          {/* Default route - redirect to dashboard if logged in, otherwise to login */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </Router>
 
-      <Toaster position="top-right" />
+        {/* Toast notifications */}
+        <Toaster />
+        <SonnerToaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: 'hsl(var(--background))',
+              color: 'hsl(var(--foreground))',
+              border: '1px solid hsl(var(--border))'
+            },
+          }}
+        />
+
+        {/* Development helper - show API URL */}
+        {import.meta.env.DEV && (
+          <div className="fixed bottom-2 left-2 right-2 flex items-center justify-between rounded bg-muted p-2 text-xs opacity-80">
+            <div>
+              <span className="font-semibold">API:</span> {API_URL}
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  window.location.href = '/login';
+                }}
+                className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        )}
+      </Router>
     </AuthProvider>
   );
 }

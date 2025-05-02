@@ -1,14 +1,15 @@
 import type React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { AdminLayout } from '@/components/layout/AdminLayout';
 
 interface ProtectedRouteProps {
+  children: React.ReactNode;
   requiredPermission?: string;
   redirectPath?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
   requiredPermission,
   redirectPath = '/login',
 }) => {
@@ -19,6 +20,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <span className="ml-3 text-sm text-muted-foreground">Loading...</span>
       </div>
     );
   }
@@ -33,12 +35,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/dashboard" replace />;
   }
 
-  // If authenticated and authorized, render the route inside the admin layout
-  return (
-    <AdminLayout>
-      <Outlet />
-    </AdminLayout>
-  );
+  // If authenticated and authorized, render the children
+  return <>{children}</>;
 };
 
 // This route is only accessible to non-authenticated users
@@ -61,5 +59,5 @@ export const PublicOnlyRoute: React.FC = () => {
   }
 
   // If not authenticated, render the route
-  return <Outlet />;
+  return <>{/* Render children via Outlet or other means */}</>;
 };

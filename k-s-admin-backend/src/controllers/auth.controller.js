@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
+const { testConnection, localAuth } = require('../config/db');
 
 /**
  * Handle user login
@@ -16,39 +17,58 @@ const login = async (req, res) => {
       });
     }
 
-    // Find user by email
-    const user = await User.getByEmail(email);
+    console.log(`Login attempt for email: ${email}`);
 
-    if (!user) {
+    // Check database connection
+    const dbConnected = await testConnection();
+    let user = null;
+    let isPasswordValid = false;
+
+    if (dbConnected) {
+      // Normal database authentication
+      console.log('Using database authentication');
+      user = await User.getByEmail(email);
+
+      if (user) {
+        // Verify password
+        isPasswordValid = await User.verifyPassword(password, user.password);
+
+        if (isPasswordValid) {
+          // Update last login timestamp
+          await User.updateLastLogin(user.id);
+        }
+      }
+    } else if (process.env.NODE_ENV === 'development') {
+      // Fallback to local authentication in development mode
+      console.log('Using local authentication fallback');
+      user = await localAuth.getByEmail(email);
+
+      if (user) {
+        // Verify password
+        isPasswordValid = await localAuth.verifyPassword(password, user.password);
+      }
+    }
+
+    // If authentication failed
+    if (!user || !isPasswordValid) {
+      console.log(`Authentication failed for email: ${email}`);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
-
-    // Verify password
-    const isPasswordValid = await User.verifyPassword(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Update last login timestamp
-    await User.updateLastLogin(user.id);
 
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role_name },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your_jwt_secret_key_for_secure_tokens',
       { expiresIn: process.env.JWT_EXPIRATION || '24h' }
     );
 
     // Don't send password in response
     const { password: _, ...userWithoutPassword } = user;
 
+    console.log(`Login successful for user: ${user.email}`);
     return res.status(200).json({
       success: true,
       message: 'Login successful',

@@ -1,10 +1,21 @@
-const { query } = require('../config/db');
+const { query, localAuth, testConnection } = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
 
 class User {
   // Get all users with optional filtering
   static async getAll(filters = {}) {
+    const dbConnected = await testConnection();
+
+    // Fallback to local users in development mode if database is not available
+    if (!dbConnected && process.env.NODE_ENV === 'development') {
+      console.log('Using local user data for getAll');
+      return localAuth.users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+    }
+
     let sql = `
       SELECT u.id, u.name, u.email, u.avatar, u.last_login, r.name as role_name, r.id as role_id
       FROM users u
@@ -35,6 +46,19 @@ class User {
 
   // Get a single user by ID
   static async getById(id) {
+    const dbConnected = await testConnection();
+
+    // Fallback to local user in development mode if database is not available
+    if (!dbConnected && process.env.NODE_ENV === 'development') {
+      console.log(`Using local user data for getById(${id})`);
+      const user = localAuth.users.find(u => u.id === id);
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      }
+      return null;
+    }
+
     const sql = `
       SELECT u.id, u.name, u.email, u.avatar, u.last_login, r.name as role_name, r.id as role_id
       FROM users u
@@ -52,6 +76,14 @@ class User {
 
   // Get a user by email
   static async getByEmail(email) {
+    const dbConnected = await testConnection();
+
+    // Fallback to local user in development mode if database is not available
+    if (!dbConnected && process.env.NODE_ENV === 'development') {
+      console.log(`Using local user data for getByEmail(${email})`);
+      return await localAuth.getByEmail(email);
+    }
+
     const sql = `
       SELECT u.*, r.name as role_name, r.permissions
       FROM users u
@@ -74,6 +106,16 @@ class User {
 
   // Create a new user
   static async create(userData) {
+    const dbConnected = await testConnection();
+
+    // Fail in development mode if database is not available
+    if (!dbConnected) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Cannot create user: Database not connected');
+        throw new Error('Cannot create user: Database not connected');
+      }
+    }
+
     const id = uuidv4();
     const { name, email, password, role_id, avatar } = userData;
 
@@ -92,6 +134,16 @@ class User {
 
   // Update an existing user
   static async update(id, userData) {
+    const dbConnected = await testConnection();
+
+    // Fail in development mode if database is not available
+    if (!dbConnected) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Cannot update user: Database not connected');
+        throw new Error('Cannot update user: Database not connected');
+      }
+    }
+
     const { name, email, password, role_id, avatar } = userData;
 
     let sql = 'UPDATE users SET ';
@@ -138,12 +190,30 @@ class User {
 
   // Update last login timestamp
   static async updateLastLogin(id) {
+    const dbConnected = await testConnection();
+
+    // Skip in development mode if database is not available
+    if (!dbConnected && process.env.NODE_ENV === 'development') {
+      console.log(`Skipping updateLastLogin for user ${id} (no database connection)`);
+      return;
+    }
+
     const sql = 'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?';
     await query(sql, [id]);
   }
 
   // Delete a user
   static async delete(id) {
+    const dbConnected = await testConnection();
+
+    // Fail in development mode if database is not available
+    if (!dbConnected) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Cannot delete user: Database not connected');
+        throw new Error('Cannot delete user: Database not connected');
+      }
+    }
+
     const user = await this.getById(id);
 
     if (!user) {
@@ -177,6 +247,24 @@ class User {
 
   // Check if user has a specific permission
   static async hasPermission(userId, permission) {
+    const dbConnected = await testConnection();
+
+    // Fallback to local permissions in development mode if database is not available
+    if (!dbConnected && process.env.NODE_ENV === 'development') {
+      console.log(`Using local permission check for user ${userId} and permission ${permission}`);
+      const user = localAuth.users.find(u => u.id === userId);
+
+      if (!user) return false;
+
+      // Super admin has all permissions
+      if (user.role_name === 'Super Admin') return true;
+
+      // Check specific permission
+      return user.permissions &&
+             (user.permissions.includes('all') ||
+              user.permissions.includes(permission));
+    }
+
     const user = await query(`
       SELECT r.permissions
       FROM users u

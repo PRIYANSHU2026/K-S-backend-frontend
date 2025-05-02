@@ -7,7 +7,7 @@ require('dotenv').config();
 const apiRoutes = require('./routes');
 
 // Database initialization
-const { initDatabase, pool } = require('./utils/dbInit'); // Make sure pool is exported from dbInit
+const { initDatabase, pool, testConnection } = require('./utils/dbInit');
 
 // Initialize app
 const app = express();
@@ -25,11 +25,15 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 app.get('/api/health', async (req, res) => {
   try {
     // Test database connection
-    const [result] = await pool.query('SELECT 1 AS db_status');
+    const dbConnected = await testConnection();
+
     res.json({
       status: 'OK',
-      message: 'Server and database are healthy',
-      database: result[0].db_status === 1 ? 'Connected' : 'Error',
+      message: dbConnected
+        ? 'Server and database are healthy'
+        : 'Server is healthy, but database is not connected',
+      database: dbConnected ? 'Connected' : 'Disconnected',
+      mode: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -52,7 +56,7 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
-      api: '/api/v1'
+      api: '/api'
     }
   });
 });
@@ -79,8 +83,23 @@ app.use((err, req, res, next) => {
 // Start server function
 const startServer = async () => {
   try {
-    // Initialize database
-    const dbInitialized = await initDatabase();
+    let dbInitialized = false;
+
+    // Try to initialize database
+    try {
+      dbInitialized = await initDatabase();
+    } catch (error) {
+      console.error('Database initialization error:', error);
+
+      // In development mode, continue even if database init fails
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Running in development mode without database connection.');
+        dbInitialized = true; // Pretend it's initialized for development
+      } else {
+        console.error('Failed to initialize database in production mode. Exiting...');
+        process.exit(1);
+      }
+    }
 
     if (!dbInitialized) {
       console.error('Failed to initialize database. Exiting...');
@@ -91,6 +110,7 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Health check: http://localhost:${PORT}/api/health`);
+      console.log(`Mode: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
