@@ -7,9 +7,13 @@ import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 
-// Import new pages
+// Import all management pages
 import ContentManagement from '@/components/pages/ContentManagement';
 import ContactSubmissions from '@/components/pages/ContactSubmissions';
+import ProductManagement from '@/components/pages/ProductManagement';
+import CustomerManagement from '@/components/pages/CustomerManagement';
+import WarrantyManagement from '@/components/pages/WarrantyManagement';
+import RoleManagement from '@/components/pages/RoleManagement';
 
 // API URL for display
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -27,6 +31,42 @@ function App() {
               <ProtectedRoute>
                 <AdminLayout>
                   <Dashboard />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Product Management */}
+          <Route
+            path="/products"
+            element={
+              <ProtectedRoute requiredPermission="products.view">
+                <AdminLayout>
+                  <ProductManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Customer Management */}
+          <Route
+            path="/customers"
+            element={
+              <ProtectedRoute requiredPermission="customers.view">
+                <AdminLayout>
+                  <CustomerManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Warranty Management */}
+          <Route
+            path="/warranties"
+            element={
+              <ProtectedRoute requiredPermission="warranties.view">
+                <AdminLayout>
+                  <WarrantyManagement />
                 </AdminLayout>
               </ProtectedRoute>
             }
@@ -56,7 +96,17 @@ function App() {
             }
           />
 
-          {/* Add other protected routes here */}
+          {/* Role Management */}
+          <Route
+            path="/roles"
+            element={
+              <ProtectedRoute requiredPermission="roles.view">
+                <AdminLayout>
+                  <RoleManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Default route - redirect to dashboard if logged in, otherwise to login */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

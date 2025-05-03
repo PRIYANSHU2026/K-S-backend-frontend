@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Product } from './types';
 import { products as fallbackProducts } from './data';
+import { fetchAPI } from './api';
 
 interface UseCatalogOptions {
   fallbackToLocal?: boolean;
@@ -16,9 +17,6 @@ interface UseCatalogResult {
   error: string | null;
   refetch: () => void;
 }
-
-// This is the base API URL - update this to match your cPanel hosting domain
-const API_BASE_URL = '/api';
 
 export function useCatalog(options: UseCatalogOptions = {}): UseCatalogResult {
   const { fallbackToLocal = true, category, subcategory, id } = options;
@@ -38,7 +36,6 @@ export function useCatalog(options: UseCatalogOptions = {}): UseCatalogResult {
       setError(null);
 
       try {
-        let apiUrl = `${API_BASE_URL}/get-catalog.php`;
         const params = new URLSearchParams();
 
         if (id) {
@@ -50,17 +47,9 @@ export function useCatalog(options: UseCatalogOptions = {}): UseCatalogResult {
         }
 
         // Add params to URL if they exist
-        if (params.toString()) {
-          apiUrl += `?${params.toString()}`;
-        }
+        const queryString = params.toString() ? `?${params.toString()}` : '';
 
-        const response = await fetch(apiUrl);
-
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await fetchAPI(`/get-catalog.php${queryString}`);
 
         if (data.success) {
           if (id && data.product) {

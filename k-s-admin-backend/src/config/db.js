@@ -37,11 +37,10 @@ const localAuth = {
       name: 'Super Admin',
       email: 'admin@ks-enterprise.com',
       // This is the hashed version of 'admin123'
-      password: '$2b$10$2UT5dbwMBHRZdKtWBtgNmumccbDa/6fi6tyu6L7HfPSvreUHd2Jli',
+      password: '$2b$10$PdVMFcqZRRzCSvYvs3GAy.y0kXRNElzW6rvMpuBYWcIKecKutU2x6',
       role_id: 'role-1',
       role_name: 'Super Admin',
-      permissions: ['all', 'products.view', 'products.edit', 'customers.view', 'customers.edit',
-                   'contact.view', 'contact.delete', 'content.view', 'content.edit'],
+      permissions: ['all'],
       last_login: new Date().toISOString()
     }
   ],

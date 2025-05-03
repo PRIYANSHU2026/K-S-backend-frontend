@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-// Define API base URL - will be set according to environment
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Import our API helpers
+import { fetchContent, submitContactForm } from "@/lib/api";
 
 // Contact information interface
 interface ContactInfo {
@@ -38,20 +38,17 @@ export default function ContactPage() {
   useEffect(() => {
     const fetchContactInfo = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/content/section/contact_info`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data && data.data.metadata) {
-            const metadata = typeof data.data.metadata === 'string'
-              ? JSON.parse(data.data.metadata)
-              : data.data.metadata;
+        const data = await fetchContent('contact_info');
+        if (data && data.metadata) {
+          const metadata = typeof data.metadata === 'string'
+            ? JSON.parse(data.metadata)
+            : data.metadata;
 
-            setContactInfo({
-              address: metadata.address || contactInfo.address,
-              phone: metadata.phone || contactInfo.phone,
-              email: metadata.email || contactInfo.email,
-            });
-          }
+          setContactInfo({
+            address: metadata.address || contactInfo.address,
+            phone: metadata.phone || contactInfo.phone,
+            email: metadata.email || contactInfo.email,
+          });
         }
       } catch (error) {
         console.error("Failed to fetch contact information:", error);
@@ -72,31 +69,23 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/contact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formState),
+      const data = await submitContactForm(formState);
+
+      toast.success("Thank you for your message! We'll get back to you soon.");
+      setFormState({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: "",
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Thank you for your message! We'll get back to you soon.");
-        setFormState({
-          name: "",
-          email: "",
-          phone: "",
-          subject: "",
-          message: "",
-        });
-      } else {
-        toast.error(data.message || "Failed to submit the form. Please try again.");
-      }
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error("An error occurred. Please try again later.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to submit the form. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
