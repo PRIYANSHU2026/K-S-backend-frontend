@@ -1,19 +1,59 @@
 import type React from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   BadgeCheck,
   Box,
   Calendar,
+  FileEdit,
+  MessageSquare,
   Package,
   ShieldCheck,
   User2,
   UserRound,
   Wallet,
 } from 'lucide-react';
+import { getAllContactSubmissions } from '@/services/contact.service';
+import { getAllContent } from '@/services/content.service';
 
 export const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const [contactSubmissionsCount, setContactSubmissionsCount] = useState(0);
+  const [contentCount, setContentCount] = useState(0);
+
+  // Fetch data for dashboard stats
+  useEffect(() => {
+    const fetchContactSubmissions = async () => {
+      try {
+        if (hasPermission('contact.view')) {
+          const result = await getAllContactSubmissions(1, 1);
+          if (result.success) {
+            setContactSubmissionsCount(result.data.pagination.total);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching contact submissions count:', error);
+      }
+    };
+
+    const fetchContentSections = async () => {
+      try {
+        if (hasPermission('content.view')) {
+          const result = await getAllContent();
+          if (result.success) {
+            setContentCount(result.data.length);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching content sections count:', error);
+      }
+    };
+
+    fetchContactSubmissions();
+    fetchContentSections();
+  }, [hasPermission]);
 
   // Mock data for dashboard stats - in a real app this would come from API
   const stats = {
@@ -37,6 +77,8 @@ export const Dashboard: React.FC = () => {
       icon: <Package className="h-5 w-5" />,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
+      link: '/products',
+      permission: 'products.view',
     },
     {
       id: 'customers',
@@ -46,6 +88,8 @@ export const Dashboard: React.FC = () => {
       icon: <User2 className="h-5 w-5" />,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
+      link: '/customers',
+      permission: 'customers.view',
     },
     {
       id: 'warranties',
@@ -55,6 +99,8 @@ export const Dashboard: React.FC = () => {
       icon: <ShieldCheck className="h-5 w-5" />,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
+      link: '/warranties',
+      permission: 'warranties.view',
     },
     {
       id: 'expiring',
@@ -64,6 +110,8 @@ export const Dashboard: React.FC = () => {
       icon: <Calendar className="h-5 w-5" />,
       color: 'text-amber-500',
       bgColor: 'bg-amber-500/10',
+      link: '/warranties',
+      permission: 'warranties.view',
     },
   ];
 
@@ -76,6 +124,30 @@ export const Dashboard: React.FC = () => {
       icon: <Box className="h-5 w-5" />,
       color: 'text-rose-500',
       bgColor: 'bg-rose-500/10',
+      link: '/categories',
+      permission: 'categories.view',
+    },
+    {
+      id: 'contact',
+      title: 'Contact Messages',
+      value: contactSubmissionsCount,
+      description: 'Customer inquiries',
+      icon: <MessageSquare className="h-5 w-5" />,
+      color: 'text-cyan-500',
+      bgColor: 'bg-cyan-500/10',
+      link: '/contact',
+      permission: 'contact.view',
+    },
+    {
+      id: 'content',
+      title: 'Content Sections',
+      value: contentCount,
+      description: 'Website content sections',
+      icon: <FileEdit className="h-5 w-5" />,
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10',
+      link: '/content',
+      permission: 'content.view',
     },
     {
       id: 'users',
@@ -83,28 +155,21 @@ export const Dashboard: React.FC = () => {
       value: stats.totalUsers,
       description: 'System users',
       icon: <UserRound className="h-5 w-5" />,
-      color: 'text-cyan-500',
-      bgColor: 'bg-cyan-500/10',
-    },
-    {
-      id: 'roles',
-      title: 'Total Roles',
-      value: stats.totalRoles,
-      description: 'User roles',
-      icon: <Wallet className="h-5 w-5" />,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/10',
-    },
-    {
-      id: 'completion',
-      title: 'Warranty Completion',
-      value: `${Math.round((stats.totalWarranties / stats.totalCustomers) * 100)}%`,
-      description: 'Customers with warranties',
-      icon: <BadgeCheck className="h-5 w-5" />,
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-500/10',
+      link: '/users',
+      permission: 'users.view',
     },
   ];
+
+  // Filter cards based on user permissions
+  const filteredStatCards = statCards.filter(card =>
+    !card.permission || hasPermission(card.permission)
+  );
+
+  const filteredAdminStatCards = adminStatCards.filter(card =>
+    !card.permission || hasPermission(card.permission)
+  );
 
   return (
     <div className="space-y-8">
@@ -117,26 +182,9 @@ export const Dashboard: React.FC = () => {
 
       {/* Main Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((card) => (
-          <Card key={card.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-              <div className={`${card.bgColor} ${card.color} rounded-full p-2`}>{card.icon}</div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
-              <p className="text-xs text-muted-foreground">{card.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Admin Stats */}
-      <div>
-        <h3 className="mb-4 text-lg font-medium">Administration</h3>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {adminStatCards.map((card) => (
-            <Card key={card.id}>
+        {filteredStatCards.map((card) => (
+          <Link to={card.link} key={card.id}>
+            <Card className="transition-all hover:shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                 <div className={`${card.bgColor} ${card.color} rounded-full p-2`}>{card.icon}</div>
@@ -146,6 +194,27 @@ export const Dashboard: React.FC = () => {
                 <p className="text-xs text-muted-foreground">{card.description}</p>
               </CardContent>
             </Card>
+          </Link>
+        ))}
+      </div>
+
+      {/* Admin Stats */}
+      <div>
+        <h3 className="mb-4 text-lg font-medium">Administration</h3>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {filteredAdminStatCards.map((card) => (
+            <Link to={card.link} key={card.id}>
+              <Card className="transition-all hover:shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                  <div className={`${card.bgColor} ${card.color} rounded-full p-2`}>{card.icon}</div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{card.value}</div>
+                  <p className="text-xs text-muted-foreground">{card.description}</p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </div>

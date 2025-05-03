@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronRight, Mail, MapPin, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+
+// Define API base URL - will be set according to environment
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+// Contact information interface
+interface ContactInfo {
+  address: string;
+  phone: string;
+  email: string;
+}
 
 export default function ContactPage() {
   const [formState, setFormState] = useState({
@@ -18,28 +28,78 @@ export default function ContactPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactInfo, setContactInfo] = useState<ContactInfo>({
+    address: "123 Main Street, Bangalore, Karnataka, India - 560001",
+    phone: "9845019069, 7760093353, 9480453271",
+    email: "info@ksenterprises.com",
+  });
+
+  // Fetch contact information from the API
+  useEffect(() => {
+    const fetchContactInfo = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/content/section/contact_info`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.metadata) {
+            const metadata = typeof data.data.metadata === 'string'
+              ? JSON.parse(data.data.metadata)
+              : data.data.metadata;
+
+            setContactInfo({
+              address: metadata.address || contactInfo.address,
+              phone: metadata.phone || contactInfo.phone,
+              email: metadata.email || contactInfo.email,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch contact information:", error);
+        // Keep using default values if fetch fails
+      }
+    };
+
+    fetchContactInfo();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast.success("Thank you for your message! We'll get back to you soon.");
-      setFormState({
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: "",
+    try {
+      const response = await fetch(`${API_BASE_URL}/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formState),
       });
-    }, 1500);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Thank you for your message! We'll get back to you soon.");
+        setFormState({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: "",
+        });
+      } else {
+        toast.error(data.message || "Failed to submit the form. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("An error occurred. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -70,7 +130,7 @@ export default function ContactPage() {
                 <MapPin className="h-5 w-5 text-red-600 mt-1 mr-3 flex-shrink-0" />
                 <div>
                   <h3 className="font-semibold text-gray-800">Address</h3>
-                  <p className="text-gray-600 mt-1">123 Main Street, Bangalore, Karnataka, India - 560001</p>
+                  <p className="text-gray-600 mt-1">{contactInfo.address}</p>
                 </div>
               </div>
 
@@ -78,7 +138,7 @@ export default function ContactPage() {
                 <Phone className="h-5 w-5 text-red-600 mt-1 mr-3 flex-shrink-0" />
                 <div>
                   <h3 className="font-semibold text-gray-800">Phone</h3>
-                  <p className="text-gray-600 mt-1">9845019069, 7760093353, 9480453271</p>
+                  <p className="text-gray-600 mt-1">{contactInfo.phone}</p>
                 </div>
               </div>
 
@@ -86,7 +146,7 @@ export default function ContactPage() {
                 <Mail className="h-5 w-5 text-red-600 mt-1 mr-3 flex-shrink-0" />
                 <div>
                   <h3 className="font-semibold text-gray-800">Email</h3>
-                  <p className="text-gray-600 mt-1">info@ksenterprises.com</p>
+                  <p className="text-gray-600 mt-1">{contactInfo.email}</p>
                 </div>
               </div>
             </div>

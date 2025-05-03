@@ -7,6 +7,10 @@ import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 
+// Import new pages
+import ContentManagement from '@/components/pages/ContentManagement';
+import ContactSubmissions from '@/components/pages/ContactSubmissions';
+
 // API URL for display
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -23,6 +27,30 @@ function App() {
               <ProtectedRoute>
                 <AdminLayout>
                   <Dashboard />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Content Management */}
+          <Route
+            path="/content"
+            element={
+              <ProtectedRoute requiredPermission="content.view">
+                <AdminLayout>
+                  <ContentManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Contact Form Submissions */}
+          <Route
+            path="/contact"
+            element={
+              <ProtectedRoute requiredPermission="contact.view">
+                <AdminLayout>
+                  <ContactSubmissions />
                 </AdminLayout>
               </ProtectedRoute>
             }

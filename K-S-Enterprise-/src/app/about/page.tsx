@@ -1,12 +1,75 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronRight, Clock, MapPin, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Define API base URL - will be set according to environment
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+// Contact information interface
+interface ContactInfo {
+  address: string;
+  phone: string;
+  email: string;
+}
+
 export default function AboutPage() {
+  const [aboutContent, setAboutContent] = useState({
+    title: "About K&S Enterprises",
+    content: "<p>K&S Enterprises is a leading provider of high-quality garden tools and power tools, delivering professional-grade solutions to customers across India since 2010.</p><p>Our mission is to provide innovative, reliable, and eco-friendly tools that help our customers accomplish their tasks efficiently and effectively. We believe in the power of quality tools to transform the way people work.</p><p>With a focus on cordless technology, we offer a comprehensive range of garden and power tools that combine performance, durability, and convenience.</p>"
+  });
+
+  const [contactInfo, setContactInfo] = useState<ContactInfo>({
+    address: "123 Main Street, Bangalore, Karnataka, India - 560001",
+    phone: "9845019069, 7760093353, 9480453271",
+    email: "info@ksenterprises.com",
+  });
+
+  // Fetch about us and contact information from the API
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        // Fetch about us content
+        const aboutResponse = await fetch(`${API_BASE_URL}/content/section/about_us`);
+        if (aboutResponse.ok) {
+          const aboutData = await aboutResponse.json();
+          if (aboutData.success && aboutData.data) {
+            setAboutContent({
+              title: aboutData.data.title || aboutContent.title,
+              content: aboutData.data.content || aboutContent.content
+            });
+          }
+        }
+
+        // Fetch contact information
+        const contactResponse = await fetch(`${API_BASE_URL}/content/section/contact_info`);
+        if (contactResponse.ok) {
+          const contactData = await contactResponse.json();
+          if (contactData.success && contactData.data && contactData.data.metadata) {
+            const metadata = typeof contactData.data.metadata === 'string'
+              ? JSON.parse(contactData.data.metadata)
+              : contactData.data.metadata;
+
+            setContactInfo({
+              address: metadata.address || contactInfo.address,
+              phone: metadata.phone || contactInfo.phone,
+              email: metadata.email || contactInfo.email,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch content:", error);
+        // Keep using default values if fetch fails
+      }
+    };
+
+    fetchContent();
+  }, []);
+
   return (
     <div className="py-8 md:py-12">
       <div className="container mx-auto px-4">
@@ -26,19 +89,12 @@ export default function AboutPage() {
             transition={{ duration: 0.5 }}
           >
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
-              About K&S Enterprises
+              {aboutContent.title}
             </h1>
-            <div className="space-y-4 text-gray-600">
-              <p>
-                K&S Enterprises is a leading provider of high-quality garden tools and power tools, delivering professional-grade solutions to customers across India since 2010.
-              </p>
-              <p>
-                Our mission is to provide innovative, reliable, and eco-friendly tools that help our customers accomplish their tasks efficiently and effectively. We believe in the power of quality tools to transform the way people work.
-              </p>
-              <p>
-                With a focus on cordless technology, we offer a comprehensive range of garden and power tools that combine performance, durability, and convenience.
-              </p>
-            </div>
+            <div
+              className="space-y-4 text-gray-600"
+              dangerouslySetInnerHTML={{ __html: aboutContent.content }}
+            />
             <div className="mt-8">
               <Link href="/contact">
                 <Button className="bg-red-600 hover:bg-red-700">Contact Us</Button>
@@ -171,15 +227,15 @@ export default function AboutPage() {
               <MapPin className="h-6 w-6 text-red-600 mt-1 mr-4 flex-shrink-0" />
               <div>
                 <h3 className="font-bold text-gray-800 mb-2">Our Location</h3>
-                <p className="text-gray-600">123 Main Street, Bangalore, Karnataka, India - 560001</p>
+                <p className="text-gray-600">{contactInfo.address}</p>
               </div>
             </div>
             <div className="flex items-start">
               <Phone className="h-6 w-6 text-red-600 mt-1 mr-4 flex-shrink-0" />
               <div>
                 <h3 className="font-bold text-gray-800 mb-2">Contact Us</h3>
-                <p className="text-gray-600">Phone: 9845019069, 7760093353</p>
-                <p className="text-gray-600 mt-1">Email: info@ksenterprises.com</p>
+                <p className="text-gray-600">Phone: {contactInfo.phone}</p>
+                <p className="text-gray-600 mt-1">Email: {contactInfo.email}</p>
               </div>
             </div>
             <div className="flex items-start">

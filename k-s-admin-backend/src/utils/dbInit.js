@@ -150,7 +150,7 @@ const localAuth = {
       name: 'Super Admin',
       email: 'admin@ks-enterprise.com',
       // This is the hashed version of 'admin123'
-      password: '$2b$10$2UT5dbwMBHRZdKtWBtgNmumccbDa/6fi6tyu6L7HfPSvreUHd2Jli',
+      password: '$2b$10$Ss30te/aOxNO3ZmWzj/XWu6JaQIpmKHeWuqVg4EPYeAKW32C6KsB6',
       role_id: 'role-1',
       role_name: 'Super Admin',
       permissions: ['all'],

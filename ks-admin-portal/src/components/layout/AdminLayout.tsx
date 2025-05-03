@@ -21,9 +21,11 @@ import { Toaster } from '@/components/ui/toaster';
 import {
   Boxes,
   ChevronRight,
+  FileEdit,
   Home,
   LayoutDashboard,
   Menu,
+  MessageSquare,
   Package,
   ShieldCheck,
   Tag,
@@ -85,6 +87,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/warranties',
       icon: <ShieldCheck className="h-5 w-5" />,
       requiredPermission: 'warranties.view',
+    },
+    {
+      name: 'Content Manager',
+      path: '/content',
+      icon: <FileEdit className="h-5 w-5" />,
+      requiredPermission: 'content.view',
+    },
+    {
+      name: 'Contact Messages',
+      path: '/contact',
+      icon: <MessageSquare className="h-5 w-5" />,
+      requiredPermission: 'contact.view',
     },
     {
       name: 'Users',
